@@ -189,6 +189,18 @@ To iterate locally:
 3. reload the extension in the browser
 4. reload the current RA event page if you changed the content script
 
+## Packaging
+
+To build a release archive locally:
+
+```bash
+./scripts/package-extension.sh
+```
+
+This creates a versioned zip in `dist/` that can be used as a release artifact.
+
+There is also a GitHub Actions workflow at `.github/workflows/package.yml` that builds the same archive on tag pushes like `v1.0.0`.
+
 ## Testing Checklist
 
 - open an RA event page directly and confirm the popup renders the right title/date/venue
