@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RA to Calendar</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <span class="logo">🎵</span>
+      <div class="header-copy">
+        <h1>RA to Calendar</h1>
+        <p class="subtitle">Export Resident Advisor events fast</p>
+      </div>
+    </header>
+
+    <div id="event-info" class="event-info hidden">
+      <h2 id="event-title">Loading...</h2>
+      <div class="event-details">
+        <p class="detail">
+          <span class="icon">📅</span>
+          <span id="event-date">-</span>
+        </p>
+        <p class="detail">
+          <span class="icon">📍</span>
+          <span id="event-venue">-</span>
+        </p>
+      </div>
+    </div>
+
+    <div id="error-message" class="error hidden">
+      <p data-role="message">Not a Resident Advisor event page</p>
+      <p class="hint" data-role="hint">Navigate to ra.co/events/XXXX</p>
+    </div>
+
+    <div id="actions" class="actions hidden">
+      <button id="download-ics" class="btn btn-primary">
+        <span class="btn-icon" aria-hidden="true">📥</span>
+        <span class="btn-copy">
+          <span class="btn-title">Download .ics</span>
+          <span class="btn-subtitle">Save a calendar file to import anywhere</span>
+        </span>
+      </button>
+      
+      <button id="add-google" class="btn btn-secondary">
+        <span class="btn-icon" aria-hidden="true">📅</span>
+        <span class="btn-copy">
+          <span class="btn-title">Open in Google Calendar</span>
+          <span class="btn-subtitle">Create the event in a new browser tab</span>
+        </span>
+      </button>
+      
+      <button id="add-apple" class="btn btn-secondary">
+        <span class="btn-icon" aria-hidden="true">🍎</span>
+        <span class="btn-copy">
+          <span class="btn-title">Download for Apple Calendar</span>
+          <span class="btn-subtitle">Downloads an .ics file for the Calendar app</span>
+        </span>
+      </button>
+    </div>
+
+    <div id="loading" class="loading">
+      <div class="spinner"></div>
+      <p>Loading event...</p>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

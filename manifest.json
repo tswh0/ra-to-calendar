@@ -1,0 +1,26 @@
+{
+  "manifest_version": 3,
+  "name": "RA to Calendar",
+  "version": "1.0.0",
+  "description": "Export Resident Advisor events to your calendar",
+  "host_permissions": ["https://ra.co/*"],
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_icon": {
+      "16": "icons/my-image.png",
+      "48": "icons/my-image.png",
+      "128": "icons/my-image.png"
+    }
+  },
+  "icons": {
+    "16": "icons/my-image.png",
+    "48": "icons/my-image.png",
+    "128": "icons/my-image.png"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://ra.co/events/*"],
+      "js": ["content/content.js"]
+    }
+  ]
+}
