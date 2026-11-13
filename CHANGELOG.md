@@ -2,6 +2,12 @@
 
 All notable changes to this project should be documented in this file.
 
+## [1.3.2] - 2026-11-13
+
+- Ship a trimmed Oat subset instead of the full library: 32.1 KB and 378 rules down to 5.8 KB and 49, after checking every selector against the popup's markup. CSS parsed on popup open drops from 36.2 KB to 9.9 KB
+- All `:root` tokens are kept, so new markup can still use the whole token set; only rules that match nothing (tables, dialogs, grids, sidebars, forms, toasts) are gone
+- Verified pixel-identical to the full stylesheet in both schemes across loaded, long-title, loading and error states, and identical computed styles across hover, focus and active on both buttons
+
 ## [1.3.1] - 2026-11-13
 
 - Fix `.ics` corruption when an escape sequence landed exactly on a fold: the continuation line dropped the backslash, so `\,` became a bare comma. The backslash now carries to the next line, covered by a test that walks every boundary position

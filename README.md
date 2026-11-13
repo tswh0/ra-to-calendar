@@ -166,7 +166,9 @@ The popup uses `browser.*` when available and falls back to `chrome.*`, so the s
 
 ### [`popup/popup.css`](popup/popup.css)
 
-The popup's own layer over Oat: theme tokens, the 320 px frame, the ticket-style date line, the skeleton loader, and the two error states. Oat itself is vendored as `popup/oat.min.css`, so no CDN request is made.
+The popup's own layer over Oat: theme tokens, the 320 px frame, the ticket-style date line, the skeleton loader, and the two error states.
+
+`popup/oat-subset.css` is Oat 1.1.0 cut down to the 49 rules whose selectors match this popup (5.8 KB instead of 32 KB). It keeps every `:root` token, so new markup can still use the full token set; only the component rules for tables, dialogs, grids, sidebars and forms are gone. Verified pixel-identical against the full stylesheet in both schemes across all four states. If the popup grows new components, copy the rules back from upstream rather than guessing.
 
 ### [`icons/`](icons/)
 
@@ -187,7 +189,7 @@ The popup's own layer over Oat: theme tokens, the 320 px frame, the ticket-style
 ├── lib/
 │   └── ical.js
 ├── popup/
-│   ├── oat.min.css
+│   ├── oat-subset.css
 │   ├── popup.css
 │   ├── popup.html
 │   └── popup.js

@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "RA to Calendar",
-  "version": "1.3.1",
+  "version": "1.3.2",
   "description": "Export Resident Advisor events to your calendar",
   "minimum_chrome_version": "123",
   "permissions": ["activeTab"],
