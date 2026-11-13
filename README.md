@@ -28,6 +28,7 @@ The extension is intentionally locked down:
 - extracts title, start/end date, venue, address, lineup, description, and canonical event URL
 - reads the page on every request, so client-side navigation between events needs no reload
 - generates RFC 5545 iCalendar output with octet-aware line folding
+- exports venue wall-clock times, so an event abroad is not shifted by the viewer's timezone
 - always emits a valid `DTSTART`, defaulting `DTEND` to six hours after the start
 - uses a stable event UID so repeated exports represent the same event
 - opens Google Calendar with a prefilled event template
@@ -100,7 +101,8 @@ The popup creates calendar output in two forms:
 The `.ics` export includes:
 
 - stable `UID`
-- required `DTSTART` and `DTEND` in UTC
+- required `DTSTART` and `DTEND`
+- floating local times when the source carries no timezone offset, UTC when it does
 - lines folded at 75 octets, never splitting a UTF-8 character or an escape sequence
 - escaped text fields for title, description, and location
 
@@ -239,7 +241,8 @@ The GitHub Actions workflow at `.github/workflows/package.yml` runs the tests, b
 
 - the extraction logic depends on Resident Advisor continuing to expose usable metadata in page state, JSON-LD, or DOM markup
 - names containing markup in the Apollo lineup string are parsed textually, not as HTML
-- an event whose start time arrives without a timezone offset is interpreted in the browser's timezone
+- Resident Advisor returns timestamps without a timezone offset, and its event page state does not include the venue's `Area.timezone`, so exports use floating time: every calendar shows the venue's wall clock. A true UTC instant cannot be derived without an extra API call
+- floating times are ambiguous for attendees in other timezones, which is the price of not knowing the zone
 - Apple Calendar uses a downloaded `.ics` file rather than launching the native app directly
 
 ## License

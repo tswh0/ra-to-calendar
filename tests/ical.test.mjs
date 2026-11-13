@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { buildIcal, escapeText, foldLine, formatUtc } from '../lib/ical.js';
+import { buildIcal, escapeText, foldLine, formatFloating, formatUtc } from '../lib/ical.js';
 
 const encoder = new TextEncoder();
 const decoder = new TextDecoder('utf-8', { fatal: true });
@@ -151,3 +151,28 @@ test('buildIcal drops CRLF injection attempts in the URL field', () => {
 function unescapedSummaryCount(ical) {
   return ical.split('\r\n').filter((line) => line.startsWith('SUMMARY:')).length;
 }
+
+test('buildIcal emits floating local time when the source carries no offset', () => {
+  const ical = buildIcal(sampleEvent({
+    dateStart: '2026-11-20T23:00:00',
+    dateEnd: null,
+    dateStartFloating: true
+  }));
+
+  assert.match(ical, /DTSTART:20261120T230000\r\n/);
+  assert.match(ical, /DTEND:20261121T050000\r\n/);
+  assert.equal(/DTSTART:[0-9]{8}T[0-9]{6}Z/.test(ical), false);
+});
+
+test('buildIcal keeps the UTC instant when the source carried an offset', () => {
+  const ical = buildIcal(sampleEvent({ dateStart: '2026-11-20T23:00:00+01:00', dateStartFloating: false }));
+
+  assert.match(ical, /DTSTART:20261120T220000Z/);
+  assert.match(ical, /DTEND:20261121T060000Z/);
+});
+
+test('formatFloating renders wall-clock components without a suffix', () => {
+  assert.equal(formatFloating(new Date('2026-11-20T23:00:00')), '20261120T230000');
+  assert.equal(formatFloating('2026-11-20T23:00:00'), '20261120T230000');
+  assert.equal(formatFloating('nope'), '');
+});

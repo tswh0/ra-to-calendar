@@ -1,5 +1,6 @@
 const DATA_WAIT_TIMEOUT_MS = 2500;
 const DATA_WAIT_INTERVAL_MS = 150;
+const ZONE_SUFFIX = /(?:Z|[+-]\d{2}:?\d{2})$/i;
 
 function getEventIdFromUrl(url = window.location.href) {
   const match = new URL(url, window.location.origin).pathname.match(/\/events\/(\d+)/);
@@ -48,8 +49,8 @@ function extractFromNextData(eventId, sourceDocument = document) {
     const extracted = {
       title: eventData.title || '',
       description: eventData.content || '',
-      dateStart: parseDateValue(eventData.startTime),
-      dateEnd: parseDateValue(eventData.endTime),
+      dateStart: parseTimestamp(eventData.startTime),
+      dateEnd: parseTimestamp(eventData.endTime),
       venue: venueData?.name || '',
       address: venueData?.address || '',
       lineup: eventData.lineup ? parseLineupString(eventData.lineup) : []
@@ -97,8 +98,8 @@ function extractFromJsonLd(sourceDocument = document) {
       return {
         title: eventNode.name || '',
         description: eventNode.description || '',
-        dateStart: parseDateValue(eventNode.startDate),
-        dateEnd: parseDateValue(eventNode.endDate),
+        dateStart: parseTimestamp(eventNode.startDate),
+        dateEnd: parseTimestamp(eventNode.endDate),
         venue: eventNode.location?.name || '',
         address: formatPostalAddress(eventNode.location?.address),
         lineup: performers.map((performer) => performer?.name || '').filter(Boolean)
@@ -115,7 +116,7 @@ function extractFromDom(sourceDocument = document) {
   return {
     title: getText(['h1', '[data-testid="event-title"]', 'meta[property="og:title"]'], 'content', sourceDocument),
     description: getText(['meta[name="description"]', 'meta[property="og:description"]'], 'content', sourceDocument),
-    dateStart: parseDateValue(sourceDocument.querySelector('time[datetime]')?.getAttribute('datetime')),
+    dateStart: parseTimestamp(sourceDocument.querySelector('time[datetime]')?.getAttribute('datetime')),
     dateEnd: null,
     venue: getText(['[data-testid="venue-link"]', 'a[href*="/clubs/"]', 'a[href*="/venues/"]'], null, sourceDocument),
     address: getText(['[data-testid="event-venue-address"]', 'address', '[itemprop="address"]'], null, sourceDocument),
@@ -174,13 +175,18 @@ function getText(selectors, attribute, sourceDocument = document) {
   return '';
 }
 
-function parseDateValue(value) {
+function parseTimestamp(value) {
   if (!value) {
     return null;
   }
 
-  const parsed = new Date(value);
-  return Number.isNaN(parsed.getTime()) ? null : parsed;
+  const text = String(value).trim();
+  const date = new Date(text);
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+
+  return { date, floating: !ZONE_SUFFIX.test(text) };
 }
 
 function mergeEventData(target, source) {
@@ -188,8 +194,14 @@ function mergeEventData(target, source) {
     return target;
   }
 
-  for (const field of ['title', 'description', 'dateStart', 'dateEnd', 'venue', 'address']) {
+  for (const field of ['title', 'description', 'venue', 'address']) {
     if (!target[field] && source[field]) {
+      target[field] = source[field];
+    }
+  }
+
+  for (const field of ['dateStart', 'dateEnd']) {
+    if (source[field] && (!target[field] || (target[field].floating && !source[field].floating))) {
       target[field] = source[field];
     }
   }
@@ -259,6 +271,16 @@ function parseLineupString(lineupStr) {
   return uniqueValues(names);
 }
 
+function toMessagePayload(eventData) {
+  return {
+    ...eventData,
+    dateStart: eventData.dateStart?.date ?? null,
+    dateStartFloating: eventData.dateStart?.floating ?? false,
+    dateEnd: eventData.dateEnd?.date ?? null,
+    dateEndFloating: eventData.dateEnd?.floating ?? false
+  };
+}
+
 async function extractCompleteEventData() {
   let eventData = await waitForCompleteEventData();
 
@@ -276,9 +298,10 @@ chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
 
   extractCompleteEventData()
     .then((eventData) => {
+      const data = toMessagePayload(eventData);
       sendResponse(isCompleteEventData(eventData)
-        ? { success: true, data: eventData }
-        : { success: false, error: 'EVENT_DATA_INCOMPLETE', data: eventData });
+        ? { success: true, data }
+        : { success: false, error: 'EVENT_DATA_INCOMPLETE', data });
     })
     .catch((error) => {
       console.error('[RA to Calendar] Extraction failed:', error);

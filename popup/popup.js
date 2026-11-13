@@ -1,4 +1,4 @@
-import { buildIcal, formatUtc, toDate } from '../lib/ical.js';
+import { buildIcal, formatFloating, formatUtc, toDate } from '../lib/ical.js';
 
 const MESSAGE_RETRY_ATTEMPTS = 4;
 const MESSAGE_RETRY_DELAY_MS = 150;
@@ -207,6 +207,7 @@ function addToGoogle() {
   }
 
   const end = toDate(eventData.dateEnd) ?? new Date(start.getTime() + DEFAULT_DURATION_MS);
+  const format = eventData.dateStartFloating ? formatFloating : formatUtc;
   const details = [
     eventData.lineup?.length ? `Lineup: ${eventData.lineup.join(', ')}` : '',
     eventData.description,
@@ -218,7 +219,7 @@ function addToGoogle() {
     text: eventData.title || 'Event',
     location: [eventData.venue, eventData.address].filter(Boolean).join(', '),
     details,
-    dates: `${formatUtc(start)}/${formatUtc(end)}`
+    dates: `${format(start)}/${format(end)}`
   });
 
   api.tabs.create({ url: `https://calendar.google.com/calendar/render?${params.toString()}` });
