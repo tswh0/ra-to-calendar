@@ -2,6 +2,11 @@
 
 All notable changes to this project should be documented in this file.
 
+## [1.2.1] - 2026-11-13
+
+- Work on regional domains. `de.ra.co`, `ja.ra.co` and the other locale subdomains were not matched by the `https://ra.co/*` patterns, so the content script never ran and the popup reported "Not a Resident Advisor event page"
+- Match the host rather than a substring when checking the active tab, so only `ra.co` and its subdomains qualify
+
 ## [1.2.0] - 2026-11-13
 
 - Export event times as floating local time. Resident Advisor returns `startTime` without a timezone offset and the venue's `Area.timezone` is not in the page state, so the old code parsed the venue wall clock in the browser's timezone: the same Berlin event exported as `22:00Z` from Berlin, `23:00Z` from London, and `04:00Z` from New York. Exports now carry the wall clock unchanged, and every calendar shows 23:00 at the venue

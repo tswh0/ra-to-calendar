@@ -1,9 +1,9 @@
 import { buildIcal, formatFloating, formatUtc, toDate } from '../lib/ical.js';
+import { isEventUrl } from '../lib/ra-url.js';
 
 const MESSAGE_RETRY_ATTEMPTS = 4;
 const MESSAGE_RETRY_DELAY_MS = 150;
 const RELOAD_TIMEOUT_MS = 15000;
-const EVENT_URL_PATTERN = /ra\.co\/events\/\d+/;
 const DEFAULT_DURATION_MS = 6 * 60 * 60 * 1000;
 
 const api = globalThis.browser ?? chrome;
@@ -26,7 +26,7 @@ let eventData = null;
 async function init() {
   const [tab] = await api.tabs.query({ active: true, currentWindow: true });
 
-  if (!tab?.url || !EVENT_URL_PATTERN.test(tab.url)) {
+  if (!tab?.url || !isEventUrl(tab.url)) {
     showError('NOT_RA_EVENT_PAGE');
     return;
   }

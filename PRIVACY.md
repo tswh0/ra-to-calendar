@@ -8,7 +8,7 @@ RA to Calendar is a browser extension that helps users export Resident Advisor e
 
 ## What Data the Extension Uses
 
-The extension processes content from Resident Advisor event pages on `https://ra.co/*`, including:
+The extension processes content from Resident Advisor event pages on `ra.co` and its regional subdomains such as `de.ra.co` (`https://*.ra.co/*`), including:
 
 - event title
 - event date and time

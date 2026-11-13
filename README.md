@@ -18,13 +18,14 @@ This extension turns the current event page into a reusable calendar export with
 
 The extension is intentionally locked down:
 
-- `host_permissions`: `https://ra.co/*`
+- `host_permissions`: `https://ra.co/*` and its regional subdomains (`https://*.ra.co/*`, e.g. `de.ra.co`, `ja.ra.co`)
 - `permissions`: `activeTab`
 
 `activeTab` is only used to read the URL of the tab you invoked the popup on, so the extension can tell an event page from any other page. It does not request broad browser permissions such as `downloads`, `tabs`, or `scripting`.
 
 ## Features
 
+- works on `ra.co` and every regional domain, such as `de.ra.co` or `ja.ra.co`
 - extracts title, start/end date, venue, address, lineup, description, and canonical event URL
 - reads the page on every request, so client-side navigation between events needs no reload
 - generates RFC 5545 iCalendar output with octet-aware line folding
@@ -117,7 +118,7 @@ Defines the extension entry points:
 - popup UI
 - static icon
 - content script match pattern
-- `activeTab` plus minimal host permissions
+- `activeTab` plus minimal host permissions for `ra.co` and its regional subdomains
 - Firefox metadata (`gecko.id`, `data_collection_permissions`)
 
 ### [`content/content.js`](content/content.js)
