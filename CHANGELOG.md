@@ -2,6 +2,14 @@
 
 All notable changes to this project should be documented in this file.
 
+## [1.2.0] - 2026-11-13
+
+- Export event times as floating local time. Resident Advisor returns `startTime` without a timezone offset and the venue's `Area.timezone` is not in the page state, so the old code parsed the venue wall clock in the browser's timezone: the same Berlin event exported as `22:00Z` from Berlin, `23:00Z` from London, and `04:00Z` from New York. Exports now carry the wall clock unchanged, and every calendar shows 23:00 at the venue
+- Detect an explicit `Z` / `±HH:MM` suffix and keep exporting a UTC instant when a source provides one, instead of discarding it
+- Prefer a zoned timestamp over a naive one when merging extraction sources
+- Google Calendar template uses the same floating/UTC choice as the `.ics` export
+- Fixes #1
+
 ## [1.1.0] - 2026-11-13
 
 - Fold `.ics` lines at 75 octets instead of 75 characters, so non-ASCII titles and lineups no longer split a UTF-8 character or an escape sequence
