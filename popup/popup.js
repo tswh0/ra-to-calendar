@@ -5,6 +5,8 @@ const MESSAGE_RETRY_ATTEMPTS = 4;
 const MESSAGE_RETRY_DELAY_MS = 150;
 const RELOAD_TIMEOUT_MS = 15000;
 const DEFAULT_DURATION_MS = 6 * 60 * 60 * 1000;
+const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 const api = globalThis.browser ?? chrome;
 
@@ -16,9 +18,9 @@ const elements = {
   errorMessage: document.getElementById('error-message'),
   actions: document.getElementById('actions'),
   loading: document.getElementById('loading'),
+  loadingLabel: document.getElementById('loading-label'),
   downloadIcs: document.getElementById('download-ics'),
-  addGoogle: document.getElementById('add-google'),
-  addApple: document.getElementById('add-apple')
+  addGoogle: document.getElementById('add-google')
 };
 
 let eventData = null;
@@ -90,7 +92,7 @@ function delay(ms) {
 }
 
 async function reloadTabAndRetry(tabId) {
-  elements.loading.innerHTML = '<div class="spinner"></div><p>Refreshing event page...</p>';
+  elements.loadingLabel.textContent = 'Refreshing page';
 
   const loaded = waitForTabComplete(tabId);
   await api.tabs.reload(tabId);
@@ -120,20 +122,21 @@ function waitForTabComplete(tabId) {
 }
 
 function showEventInfo() {
-  elements.loading.classList.add('hidden');
-  elements.eventInfo.classList.remove('hidden');
-  elements.actions.classList.remove('hidden');
+  elements.loading.hidden = true;
+  elements.eventInfo.hidden = false;
+  elements.actions.hidden = false;
 
-  elements.eventTitle.textContent = eventData.title || 'Unknown Event';
+  elements.eventTitle.textContent = eventData.title || 'Untitled event';
+  elements.eventTitle.title = eventData.title || '';
   elements.eventDate.textContent = formatDateRange(eventData.dateStart, eventData.dateEnd);
-  elements.eventVenue.textContent = eventData.venue || 'Unknown Venue';
+  elements.eventVenue.textContent = eventData.venue || 'Venue unknown';
 }
 
 function showError(errorCode) {
-  elements.loading.classList.add('hidden');
-  elements.eventInfo.classList.add('hidden');
-  elements.actions.classList.add('hidden');
-  elements.errorMessage.classList.remove('hidden');
+  elements.loading.hidden = true;
+  elements.eventInfo.hidden = true;
+  elements.actions.hidden = true;
+  elements.errorMessage.hidden = false;
 
   const message = getErrorMessage(errorCode);
   elements.errorMessage.querySelector('[data-role="message"]').textContent = message.message;
@@ -157,23 +160,23 @@ function getErrorMessage(errorCode) {
 function formatDateRange(start, end) {
   const startDate = toDate(start);
   if (!startDate) {
-    return 'Date TBD';
+    return 'Date to be announced';
   }
 
-  const dateOptions = { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' };
-  const timeOptions = { hour: '2-digit', minute: '2-digit' };
-  const startLabel = `${startDate.toLocaleDateString('en-GB', dateOptions)} · ${startDate.toLocaleTimeString('en-GB', timeOptions)}`;
+  const day = (date) => `${WEEKDAYS[date.getDay()]} ${date.getDate()} ${MONTHS[date.getMonth()]}`;
+  const time = (date) => `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+  const head = `${day(startDate)} ${startDate.getFullYear()}`;
 
   const endDate = toDate(end);
   if (!endDate) {
-    return startLabel;
+    return `${head} · ${time(startDate)}`;
   }
 
-  const endLabel = endDate.toDateString() === startDate.toDateString()
-    ? endDate.toLocaleTimeString('en-GB', timeOptions)
-    : `${endDate.toLocaleDateString('en-GB', dateOptions)} ${endDate.toLocaleTimeString('en-GB', timeOptions)}`;
+  const spansDays = endDate.toDateString() !== startDate.toDateString();
+  const withinTwoDays = endDate - startDate < 48 * 60 * 60 * 1000;
+  const tail = spansDays && !withinTwoDays ? `${day(endDate)} ${time(endDate)}` : time(endDate);
 
-  return `${startLabel} - ${endLabel}`;
+  return `${head} · ${time(startDate)}–${tail}`;
 }
 
 function downloadIcs() {
@@ -227,6 +230,5 @@ function addToGoogle() {
 
 elements.downloadIcs.addEventListener('click', downloadIcs);
 elements.addGoogle.addEventListener('click', addToGoogle);
-elements.addApple.addEventListener('click', downloadIcs);
 
 init();

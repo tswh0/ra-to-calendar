@@ -2,11 +2,10 @@
 
 Browser extension for exporting Resident Advisor events as calendar entries.
 
-The extension runs only on `ra.co` event pages, extracts event metadata from the page, and offers three actions:
+The extension runs only on `ra.co` event pages, extracts event metadata from the page, and offers two actions:
 
-- download an `.ics` file
+- download an `.ics` file, for Apple Calendar, Outlook, or anything else that reads iCalendar
 - open a prefilled Google Calendar entry
-- download an `.ics` file for Apple Calendar
 
 ## Why This Exists
 
@@ -28,6 +27,7 @@ The extension is intentionally locked down:
 - works on `ra.co` and every regional domain, such as `de.ra.co` or `ja.ra.co`
 - extracts title, start/end date, venue, address, lineup, description, and canonical event URL
 - reads the page on every request, so client-side navigation between events needs no reload
+- a 320 px popup that follows the system light or dark scheme
 - generates RFC 5545 iCalendar output with octet-aware line folding
 - exports venue wall-clock times, so an event abroad is not shifted by the viewer's timezone
 - always emits a valid `DTSTART`, defaulting `DTEND` to six hours after the start
@@ -166,11 +166,11 @@ The popup uses `browser.*` when available and falls back to `chrome.*`, so the s
 
 ### [`popup/popup.css`](popup/popup.css)
 
-Defines a compact dark popup UI with:
+The popup's own layer over Oat: theme tokens, the 320 px frame, the ticket-style date line, the skeleton loader, and the two error states. Oat itself is vendored as `popup/oat.min.css`, so no CDN request is made.
 
-- event summary card
-- loading and error states
-- primary and secondary export buttons
+### [`icons/`](icons/)
+
+`icon.svg` is the mark; `icon-{16,32,48,128}.png` are rendered from it by `scripts/make-icons.py`. The 16 px size uses its own geometry (squarer corner, heavier dot) because the full-size proportions turn to mush in a toolbar.
 
 ## Project Structure
 
@@ -179,16 +179,20 @@ Defines a compact dark popup UI with:
 ├── content/
 │   └── content.js
 ├── icons/
+│   ├── icon.svg
 │   ├── icon-16.png
+│   ├── icon-32.png
 │   ├── icon-48.png
 │   └── icon-128.png
 ├── lib/
 │   └── ical.js
 ├── popup/
+│   ├── oat.min.css
 │   ├── popup.css
 │   ├── popup.html
 │   └── popup.js
 ├── scripts/
+│   ├── make-icons.py
 │   └── package-extension.sh
 ├── tests/
 │   └── ical.test.mjs

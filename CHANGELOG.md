@@ -2,6 +2,14 @@
 
 All notable changes to this project should be documented in this file.
 
+## [1.3.0] - 2026-11-13
+
+- Redesign the popup: one column, hairline rules instead of boxes, a monospace date line, a quiet loading skeleton that mirrors the real layout, and a single inverted primary action. Follows the system light/dark scheme
+- Replace the emoji icons and the duplicated "Download for Apple Calendar" button; the `.ics` download is the single file action, and the hint names the calendars it works with
+- New mark: a red date tile with a paper band and a marked day, drawn per size by `scripts/make-icons.py` and shipped as `icons/icon.svg`
+- Vendor Oat (`popup/oat.min.css`) as the base stylesheet, re-themed through its tokens
+- Show the full event title on hover when the three-line clamp truncates it
+
 ## [1.2.1] - 2026-11-13
 
 - Work on regional domains. `de.ra.co`, `ja.ra.co` and the other locale subdomains were not matched by the `https://ra.co/*` patterns, so the content script never ran and the popup reported "Not a Resident Advisor event page"

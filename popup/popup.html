@@ -4,68 +4,58 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>RA to Calendar</title>
+  <link rel="stylesheet" href="oat.min.css">
   <link rel="stylesheet" href="popup.css">
 </head>
 <body>
-  <div class="container">
-    <header>
-      <span class="logo">🎵</span>
-      <div class="header-copy">
-        <h1>RA to Calendar</h1>
-        <p class="subtitle">Export Resident Advisor events fast</p>
+  <header class="bar">
+    <svg class="mark" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <defs>
+        <clipPath id="tile">
+          <rect width="24" height="24" rx="5.5"></rect>
+        </clipPath>
+      </defs>
+      <g clip-path="url(#tile)">
+        <rect width="24" height="24" fill="#e21355"></rect>
+        <rect width="24" height="7" fill="var(--mark-paper)"></rect>
+        <circle cx="15.2" cy="15.8" r="2.35" fill="var(--mark-paper)"></circle>
+      </g>
+    </svg>
+    <span class="wordmark">RA to Calendar</span>
+  </header>
+
+  <main>
+    <section id="event-info" hidden>
+      <h1 id="event-title"></h1>
+      <p class="when"><span id="event-date"></span></p>
+      <p id="event-venue"></p>
+    </section>
+
+    <div id="loading" class="loading" role="status" aria-label="Loading event">
+      <div class="loading-copy">
+        <span class="skeleton skeleton-title"></span>
+        <span class="skeleton skeleton-meta"></span>
+        <span class="skeleton skeleton-meta short"></span>
+        <p class="loading-label" id="loading-label">Reading event</p>
       </div>
-    </header>
-
-    <div id="event-info" class="event-info hidden">
-      <h2 id="event-title">Loading...</h2>
-      <div class="event-details">
-        <p class="detail">
-          <span class="icon">📅</span>
-          <span id="event-date">-</span>
-        </p>
-        <p class="detail">
-          <span class="icon">📍</span>
-          <span id="event-venue">-</span>
-        </p>
+      <div class="loading-actions" aria-hidden="true">
+        <span class="skeleton skeleton-button"></span>
+        <span class="skeleton skeleton-button"></span>
+        <span class="skeleton skeleton-hint"></span>
       </div>
     </div>
 
-    <div id="error-message" class="error hidden">
-      <p data-role="message">Not a Resident Advisor event page</p>
-      <p class="hint" data-role="hint">Navigate to ra.co/events/XXXX</p>
+    <div id="error-message" class="error" hidden>
+      <p data-role="message"></p>
+      <p class="hint" data-role="hint"></p>
     </div>
+  </main>
 
-    <div id="actions" class="actions hidden">
-      <button id="download-ics" class="btn btn-primary">
-        <span class="btn-icon" aria-hidden="true">📥</span>
-        <span class="btn-copy">
-          <span class="btn-title">Download .ics</span>
-          <span class="btn-subtitle">Save a calendar file to import anywhere</span>
-        </span>
-      </button>
-      
-      <button id="add-google" class="btn btn-secondary">
-        <span class="btn-icon" aria-hidden="true">📅</span>
-        <span class="btn-copy">
-          <span class="btn-title">Open in Google Calendar</span>
-          <span class="btn-subtitle">Create the event in a new browser tab</span>
-        </span>
-      </button>
-      
-      <button id="add-apple" class="btn btn-secondary">
-        <span class="btn-icon" aria-hidden="true">🍎</span>
-        <span class="btn-copy">
-          <span class="btn-title">Download for Apple Calendar</span>
-          <span class="btn-subtitle">Downloads an .ics file for the Calendar app</span>
-        </span>
-      </button>
-    </div>
-
-    <div id="loading" class="loading">
-      <div class="spinner"></div>
-      <p>Loading event...</p>
-    </div>
-  </div>
+  <footer id="actions" hidden>
+    <button id="download-ics" type="button">Download .ics</button>
+    <button id="add-google" type="button" class="outline">Add to Google Calendar</button>
+    <p class="hint">Apple Calendar, Outlook, or any app that reads .ics</p>
+  </footer>
 
   <script type="module" src="popup.js"></script>
 </body>
