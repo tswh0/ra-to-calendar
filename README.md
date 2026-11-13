@@ -19,14 +19,16 @@ This extension turns the current event page into a reusable calendar export with
 The extension is intentionally locked down:
 
 - `host_permissions`: `https://ra.co/*`
+- `permissions`: `activeTab`
 
-It does not request broad browser permissions such as `downloads`, `tabs`, or `scripting`.
+`activeTab` is only used to read the URL of the tab you invoked the popup on, so the extension can tell an event page from any other page. It does not request broad browser permissions such as `downloads`, `tabs`, or `scripting`.
 
 ## Features
 
 - extracts title, start/end date, venue, address, lineup, description, and canonical event URL
-- supports Resident Advisor SPA navigation without requiring a manual full-page reload in normal cases
-- generates RFC-style folded iCalendar output for long lines
+- reads the page on every request, so client-side navigation between events needs no reload
+- generates RFC 5545 iCalendar output with octet-aware line folding
+- always emits a valid `DTSTART`, defaulting `DTEND` to six hours after the start
 - uses a stable event UID so repeated exports represent the same event
 - opens Google Calendar with a prefilled event template
 
@@ -44,6 +46,8 @@ It does not request broad browser permissions such as `downloads`, `tabs`, or `s
 1. Open `about:debugging#/runtime/this-firefox`
 2. Click `Load Temporary Add-on`
 3. Select `manifest.json`
+
+Firefox 140 or newer is required. Permanent installation needs the extension signed through addons.mozilla.org, since the manifest carries a fixed `browser_specific_settings.gecko.id`.
 
 ## Usage
 
@@ -65,16 +69,11 @@ Its job is to extract event data from multiple sources in order of usefulness:
 
 This layered extraction matters because Resident Advisor is a SPA and different parts of the page can update at different times.
 
-### 2. SPA Navigation Handling
+### 2. SPA Navigation
 
-Resident Advisor changes event pages via client-side navigation. The content script therefore:
+Resident Advisor changes event pages via client-side navigation, but the content script keeps no cached state: every popup request re-reads the current URL, `__NEXT_DATA__`, JSON-LD, and DOM. Whatever event is on screen is the event that gets exported, so no `pushState` hooks or navigation polling are needed.
 
-- tracks the current event ID from the URL
-- hooks `history.pushState` and `history.replaceState`
-- listens to `popstate`
-- polls as a fallback for navigation drift
-
-When the popup asks for data, the content script first waits briefly for the page state to settle. If the in-page data is still incomplete, it fetches the current event URL and parses the returned HTML in memory to recover a complete event payload.
+When the popup asks for data, the content script waits briefly for the page state to settle. If the in-page data is still incomplete, it fetches the current event URL and parses the returned HTML in memory to recover a complete event payload.
 
 ### 3. Popup Actions
 
@@ -101,9 +100,9 @@ The popup creates calendar output in two forms:
 The `.ics` export includes:
 
 - stable `UID`
-- UTC timestamps
-- folded long lines
-- escaped text fields for description and location
+- required `DTSTART` and `DTEND` in UTC
+- lines folded at 75 octets, never splitting a UTF-8 character or an escape sequence
+- escaped text fields for title, description, and location
 
 Apple Calendar currently uses the same `.ics` download flow, because a browser extension cannot reliably open the native Calendar app directly with a locally generated event payload.
 
@@ -116,7 +115,8 @@ Defines the extension entry points:
 - popup UI
 - static icon
 - content script match pattern
-- minimal host permissions
+- `activeTab` plus minimal host permissions
+- Firefox metadata (`gecko.id`, `data_collection_permissions`)
 
 ### [`content/content.js`](content/content.js)
 
@@ -124,7 +124,6 @@ Core responsibilities:
 
 - identify the current RA event ID from the URL
 - extract event metadata from page data sources
-- handle SPA navigation
 - answer popup messages with normalized event data
 
 Key functions:
@@ -133,8 +132,17 @@ Key functions:
 - `extractFromNextData()`: reads Next.js / Apollo state
 - `extractFromJsonLd()`: parses structured event metadata
 - `extractFromDom()`: recovers data from visible markup
-- `waitForCompleteEventData()`: waits for late-arriving SPA updates
+- `waitForCompleteEventData()`: polls until the page exposes title and start date
 - `fetchEventDataFromPageSource()`: parses freshly fetched HTML if the live document is incomplete
+
+### [`lib/ical.js`](lib/ical.js)
+
+Pure iCalendar generation, shared by the popup and the test suite:
+
+- `escapeText()`: RFC 5545 escaping, backslashes first
+- `formatUtc()`: `YYYYMMDDTHHMMSSZ` timestamps
+- `foldLine()`: folds at 75 octets without splitting multi-byte characters or escapes
+- `buildIcal()`: assembles the `VEVENT`, returning `null` when there is no start date
 
 ### [`popup/popup.js`](popup/popup.js)
 
@@ -148,9 +156,10 @@ Key functions:
 
 - `init()`: popup entry point
 - `requestEventData()`: asks the content script for event metadata
-- `generateIcal()`: builds the `.ics` document
 - `downloadIcs()`: triggers a browser download using a `Blob`
 - `addToGoogle()`: opens a Google Calendar template
+
+The popup uses `browser.*` when available and falls back to `chrome.*`, so the same code runs in Chromium and Firefox.
 
 ### [`popup/popup.css`](popup/popup.css)
 
@@ -167,20 +176,37 @@ Defines a compact dark popup UI with:
 ├── content/
 │   └── content.js
 ├── icons/
-│   └── my-image.png
+│   ├── icon-16.png
+│   ├── icon-48.png
+│   └── icon-128.png
+├── lib/
+│   └── ical.js
 ├── popup/
 │   ├── popup.css
 │   ├── popup.html
 │   └── popup.js
-├── .gitignore
+├── scripts/
+│   └── package-extension.sh
+├── tests/
+│   └── ical.test.mjs
+├── .github/
+│   └── workflows/
+│       └── package.yml
+├── CHANGELOG.md
 ├── LICENSE
+├── PRIVACY.md
 ├── manifest.json
+├── package.json
 └── README.md
 ```
 
 ## Local Development
 
-There is no build step.
+There is no build step and no runtime dependency. Node 20 or newer is only needed to run the tests.
+
+```bash
+npm test
+```
 
 To iterate locally:
 
@@ -197,9 +223,9 @@ To build a release archive locally:
 ./scripts/package-extension.sh
 ```
 
-This creates a versioned zip in `dist/` that can be used as a release artifact.
+This creates a versioned zip in `dist/` containing only the extension files that ship to the store.
 
-There is also a GitHub Actions workflow at `.github/workflows/package.yml` that builds the same archive on tag pushes like `v1.0.0`.
+The GitHub Actions workflow at `.github/workflows/package.yml` runs the tests, builds the same archive on tag pushes like `v1.1.0`, uploads it as a build artifact, and attaches it to the GitHub release.
 
 ## Testing Checklist
 
@@ -212,8 +238,9 @@ There is also a GitHub Actions workflow at `.github/workflows/package.yml` that 
 ## Known Limits
 
 - the extraction logic depends on Resident Advisor continuing to expose usable metadata in page state, JSON-LD, or DOM markup
+- names containing markup in the Apollo lineup string are parsed textually, not as HTML
+- an event whose start time arrives without a timezone offset is interpreted in the browser's timezone
 - Apple Calendar uses a downloaded `.ics` file rather than launching the native app directly
-- the extension is optimized for Chromium-style extension environments and tested as an unpacked extension workflow
 
 ## License
 
