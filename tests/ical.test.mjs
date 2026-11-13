@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { buildIcal, escapeText, foldLine, formatFloating, formatUtc } from '../lib/ical.js';
+import { buildIcal, escapeText, eventEnd, foldLine, formatFloating, formatUtc } from '../lib/ical.js';
 
 const encoder = new TextEncoder();
 const decoder = new TextDecoder('utf-8', { fatal: true });
@@ -85,6 +85,21 @@ test('foldLine never ends a line on a lone escape backslash', () => {
   assert.equal(unfold(foldLine(line)), line);
 });
 
+test('foldLine keeps an escape sequence intact when it lands on the fold', () => {
+  const line = `${'X'.repeat(74)}\\,${'Y'.repeat(10)}`;
+  const folded = foldLine(line);
+
+  assert.equal(unfold(folded), line);
+  assert.ok(folded.includes('\r\n '), 'line must actually have folded');
+});
+
+test('foldLine survives an escape at every boundary position', () => {
+  for (let pad = 60; pad <= 80; pad += 1) {
+    const line = `${'a'.repeat(pad)}\\,${'b'.repeat(80)}`;
+    assert.equal(unfold(foldLine(line)), line, `escape started at octet ${pad}`);
+  }
+});
+
 test('foldLine wraps the escaped description without corrupting it', () => {
   const original = 'Zeitgeist, Session; "special"\\n' + 'a'.repeat(120);
   const folded = foldLine(`DESCRIPTION:${escapeText(original)}`);
@@ -104,6 +119,13 @@ test('buildIcal emits CRLF line endings only', () => {
   assert.ok(ical.startsWith('BEGIN:VCALENDAR\r\n'));
   assert.ok(ical.endsWith('END:VCALENDAR\r\n'));
   assert.equal(/(?<!\r)\n/.test(ical), false);
+});
+
+test('eventEnd falls back to six hours and refuses missing starts', () => {
+  assert.equal(eventEnd({ dateStart: '2026-11-20T23:00:00Z' }).toISOString(), '2026-11-21T05:00:00.000Z');
+  assert.equal(eventEnd({ dateStart: '2026-11-20T23:00:00Z', dateEnd: '2026-11-21T02:00:00Z' }).toISOString(), '2026-11-21T02:00:00.000Z');
+  assert.equal(eventEnd({ dateStart: null }), null);
+  assert.equal(eventEnd(null), null);
 });
 
 test('buildIcal defaults the end time to six hours after the start', () => {

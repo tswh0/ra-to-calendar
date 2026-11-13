@@ -1,10 +1,9 @@
-import { buildIcal, formatFloating, formatUtc, toDate } from '../lib/ical.js';
+import { buildIcal, eventEnd, formatFloating, formatUtc, toDate } from '../lib/ical.js';
 import { isEventUrl } from '../lib/ra-url.js';
 
 const MESSAGE_RETRY_ATTEMPTS = 4;
 const MESSAGE_RETRY_DELAY_MS = 150;
 const RELOAD_TIMEOUT_MS = 15000;
-const DEFAULT_DURATION_MS = 6 * 60 * 60 * 1000;
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
@@ -26,17 +25,17 @@ const elements = {
 let eventData = null;
 
 async function init() {
-  const [tab] = await api.tabs.query({ active: true, currentWindow: true });
-
-  if (!tab?.url || !isEventUrl(tab.url)) {
-    showError('NOT_RA_EVENT_PAGE');
-    return;
-  }
-
   try {
+    const [tab] = await api.tabs.query({ active: true, currentWindow: true });
+
+    if (!tab?.url || !isEventUrl(tab.url)) {
+      showError('NOT_RA_EVENT_PAGE');
+      return;
+    }
+
     let response = await requestEventData(tab.id);
 
-    if (!response?.success) {
+    if (!response) {
       response = await reloadTabAndRetry(tab.id);
     }
 
@@ -187,9 +186,11 @@ function downloadIcs() {
 
   const blob = new Blob([ical], { type: 'text/calendar;charset=utf-8' });
   const url = URL.createObjectURL(blob);
-  const filename = eventData.title
-    ? `${eventData.title.replace(/[^a-z0-9]/gi, '_').substring(0, 50)}.ics`
-    : 'event.ics';
+  const slug = (eventData.title || '')
+    .replace(/[^\p{L}\p{N}]+/gu, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 60);
+  const filename = `${slug || eventData.eventId || 'event'}.ics`;
 
   const link = document.createElement('a');
   link.href = url;
@@ -209,7 +210,11 @@ function addToGoogle() {
     return;
   }
 
-  const end = toDate(eventData.dateEnd) ?? new Date(start.getTime() + DEFAULT_DURATION_MS);
+  const end = eventEnd(eventData);
+  if (!end) {
+    return;
+  }
+
   const format = eventData.dateStartFloating ? formatFloating : formatUtc;
   const details = [
     eventData.lineup?.length ? `Lineup: ${eventData.lineup.join(', ')}` : '',

@@ -2,6 +2,17 @@
 
 All notable changes to this project should be documented in this file.
 
+## [1.3.1] - 2026-11-13
+
+- Fix `.ics` corruption when an escape sequence landed exactly on a fold: the continuation line dropped the backslash, so `\,` became a bare comma. The backslash now carries to the next line, covered by a test that walks every boundary position
+- Read the event title from the `<h1>` again. The DOM fallback asked the heading for a `content` attribute, so only `og:title` ever produced a title
+- Stop reloading the user's tab when the page genuinely has no event data (sold out, removed); reload only when no content script answered at all
+- Catch a failing `tabs.query` instead of leaving the popup on its skeleton forever
+- Share the six-hour default end between the `.ics` and Google Calendar paths (`eventEnd()`)
+- Declare `minimum_chrome_version: 123`, the first Chrome that supports the `light-dark()` and `color-mix()` used by the theme
+- Paint the popup canvas dark before CSS lands via `<meta name="color-scheme">`, removing the white flash on dark systems
+- Keep letters from any script in the downloaded filename instead of turning them into underscores
+
 ## [1.3.0] - 2026-11-13
 
 - Redesign the popup: one column, hairline rules instead of boxes, a monospace date line, a quiet loading skeleton that mirrors the real layout, and a single inverted primary action. Follows the system light/dark scheme

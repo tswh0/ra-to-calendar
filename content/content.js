@@ -32,6 +32,19 @@ function extractEventData(sourceDocument = document, sourceUrl = window.location
   return data;
 }
 
+let nextDataCache = null;
+
+function readApolloState(script) {
+  const text = script.textContent;
+  if (nextDataCache?.text === text) {
+    return nextDataCache.state;
+  }
+
+  const state = JSON.parse(text)?.props?.apolloState ?? null;
+  nextDataCache = { text, state };
+  return state;
+}
+
 function extractFromNextData(eventId, sourceDocument = document) {
   const nextDataScript = sourceDocument.getElementById('__NEXT_DATA__');
   if (!nextDataScript) {
@@ -39,7 +52,7 @@ function extractFromNextData(eventId, sourceDocument = document) {
   }
 
   try {
-    const apolloState = JSON.parse(nextDataScript.textContent)?.props?.apolloState;
+    const apolloState = readApolloState(nextDataScript);
     const eventData = apolloState?.[`Event:${eventId}`];
     if (!eventData) {
       return null;
@@ -114,7 +127,8 @@ function extractFromJsonLd(sourceDocument = document) {
 
 function extractFromDom(sourceDocument = document) {
   return {
-    title: getText(['h1', '[data-testid="event-title"]', 'meta[property="og:title"]'], 'content', sourceDocument),
+    title: getText(['h1', '[data-testid="event-title"]'], null, sourceDocument)
+      || getText(['meta[property="og:title"]'], 'content', sourceDocument),
     description: getText(['meta[name="description"]', 'meta[property="og:description"]'], 'content', sourceDocument),
     dateStart: parseTimestamp(sourceDocument.querySelector('time[datetime]')?.getAttribute('datetime')),
     dateEnd: null,
